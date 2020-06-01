@@ -45,7 +45,12 @@ def train_model(model: nn.Module, dataset: Dataset, batch_size: int, loss_functi
         for x,y in tqdm(iter(train_loader), total=num_train_batches):
             ##########################################################
             # YOUR CODE HERE
-            ...
+            loss, logits = loss_function(x, y, model)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            losses.append(torch.mean(loss).detach())
+            accuracies.append(torch.mean((torch.argmax(logits, dim=1)==y).float()).detach())
             ##########################################################
     return losses, accuracies
 
@@ -81,7 +86,15 @@ def predict_model(model: nn.Module, dataset: Dataset, batch_size: int, attack_fu
     for x, y in tqdm(iter(test_loader), total=num_batches):
         ##########################################################
         # YOUR CODE HERE
-        ...
+        if attack_function is not None:
+          x.requires_grad = True
+          logits = model(x)
+          loss = nn.functional.cross_entropy(logits, y)
+          loss.backward()
+          x = attack_function(logits, x, y, **attack_args)
+        prediction = torch.argmax(model(x), dim=1)
+        predictions.append(prediction)
+        targets.append(y)
         ##########################################################
     predictions = torch.cat(predictions)
     targets = torch.cat(targets)

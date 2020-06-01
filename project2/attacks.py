@@ -34,7 +34,16 @@ def fast_gradient_attack(logits: torch.Tensor, x: torch.Tensor, y: torch.Tensor,
 
     ##########################################################
     # YOUR CODE HERE
-    ...
+    dim = torch.prod(torch.tensor(x.shape[1:], dtype=torch.float))
+    if norm == "1":
+      perturbation = epsilon*torch.sign(x.grad)/dim
+    elif norm == "2":
+      perturbation = epsilon*torch.sign(x.grad)/torch.sqrt(dim)
+    else:
+      perturbation = epsilon*torch.sign(x.grad)
+    x_pert = x + perturbation
+    x_pert = torch.max(torch.min(x_pert, torch.ones(1)), torch.zeros(1))
+
     ##########################################################
 
     return x_pert.detach()
