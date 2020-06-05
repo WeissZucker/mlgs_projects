@@ -165,7 +165,7 @@ class SmoothClassifier(nn.Module):
         ##########################################################
         # YOUR CODE HERE
         top_class = int(torch.argmax(class_counts))
-        p_value = binom_test(class_count[top_class], int(torch.sum(class_count)))
+        p_value = binom_test(class_counts[top_class], int(torch.sum(class_counts)))
         if p_value <= alpha:
           return top_class
         else:
@@ -201,7 +201,7 @@ class SmoothClassifier(nn.Module):
                 this_batch_size = min(num_remaining, batch_size)
                 ##########################################################
                 # YOUR CODE HERE
-                x = inputs.repeat(this_batch_size, *inputs.shape[1:])
+                x = inputs.repeat(this_batch_size, 1, 1, 1)
                 logits = self.forward(x)
                 predictions = torch.argmax(logits, dim=1)
                 for pred in predictions:
