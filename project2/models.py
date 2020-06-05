@@ -36,7 +36,6 @@ class ConvNN(nn.Module):
         """
         return next(self.parameters()).device
 
-
 def lower_confidence_bound(num_class_A: int, num_samples: int, alpha: float) -> float:
     """
     Computes a lower bound on the probability of the event occuring in a Bernoulli distribution.
@@ -116,10 +115,17 @@ class SmoothClassifier(nn.Module):
 
         """
         self.base_classifier.eval()
+        
 
         ##########################################################
         # YOUR CODE HERE
-        ...
+        top_class = self.predict(inputs, n0, alpha, batch_size)
+
+        if top_class == -1:
+          return SmoothClassifier.ABSTAIN, 0.0
+        
+        class_counts = self._sample_noise_predictions(inputs, num_samples, batch_size).cpu()
+        p_A_lower_bound = lower_confidence_bound(class_counts[top_class], sum(class_counts), alpha)
         ##########################################################
 
         if p_A_lower_bound < 0.5:
@@ -127,7 +133,7 @@ class SmoothClassifier(nn.Module):
         else:
             ##########################################################
             # YOUR CODE HERE
-            ...
+            radius = self.sigma * norm.ppf(p_A_lower_bound)
             ##########################################################
             return top_class, radius
 
@@ -135,7 +141,7 @@ class SmoothClassifier(nn.Module):
         """
         Predict a label for the input sample via the smooth classifier g(x).
 
-        Uses the test binom_test(count1, count1+count2, p=0.5) > alpha to determine whether the top class is the winning
+        Uses the test binom_test(count1, count1+count2, p=0.5) > alpha to determine whether the top class is the top_class
         class with at least the confidence level alpha.
 
         Parameters
@@ -152,13 +158,18 @@ class SmoothClassifier(nn.Module):
 
         Returns
         -------
-        int: the winning class or -1 in case the desired confidence level could not be reached.
+        int: the top_class class or -1 in case the desired confidence level could not be reached.
         """
         self.base_classifier.eval()
         class_counts = self._sample_noise_predictions(inputs, num_samples, batch_size).cpu()
         ##########################################################
         # YOUR CODE HERE
-        ...
+        top_class = int(torch.argmax(class_counts))
+        p_value = binom_test(class_count[top_class], int(torch.sum(class_count)))
+        if p_value <= alpha:
+          return top_class
+        else:
+          return -1
         ##########################################################
 
     def _sample_noise_predictions(self, inputs: torch.tensor, num_samples: int, batch_size: int) -> torch.Tensor:
@@ -190,7 +201,11 @@ class SmoothClassifier(nn.Module):
                 this_batch_size = min(num_remaining, batch_size)
                 ##########################################################
                 # YOUR CODE HERE
-                ...
+                x = inputs.repeat(this_batch_size, *inputs.shape[1:])
+                logits = self.forward(x)
+                predictions = torch.argmax(logits, dim=1)
+                for pred in predictions:
+                  class_counts[int(pred)] += 1
                 ##########################################################
         return class_counts
 
