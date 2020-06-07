@@ -38,7 +38,7 @@ def fast_gradient_attack(logits: torch.Tensor, x: torch.Tensor, y: torch.Tensor,
     if norm == "1":
       perturbation = epsilon*torch.sign(x.grad)/dim
     elif norm == "2":
-      perturbation = torch.sqrt(torch.tensor(epsilon))*torch.sign(x.grad)/torch.sqrt(dim)
+      perturbation = epsilon*torch.sign(x.grad)/torch.sqrt(dim)
     else:
       perturbation = epsilon*torch.sign(x.grad)
     x_pert = (x + perturbation).clamp(0, 1)
